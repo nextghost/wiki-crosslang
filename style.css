@@ -1,0 +1,38 @@
+body {
+	margin: 0px;
+	padding: 1em;
+	background-color: white;
+}
+
+div.form {
+	margin-bottom: 2em;
+}
+
+.form span.formfield {
+	margin-right: 1em;
+}
+
+div#results {
+	text-align: center;
+}
+
+table {
+	border-collapse: collapse;
+	text-align: left;
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
+
+td, th {
+	border: 1px solid #cccccc;
+	padding: 4px;
+}
+
+tr:hover {
+	background-color: #f0f0f0;
+}
+
+.error {
+	color: red;
+	font-weight: bold;
+}

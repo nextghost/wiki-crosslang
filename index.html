@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Wikisource Cross-lang Search</title>
+<script src="main.js"></script>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<h1>Wikisource Cross-lang Search</h1>
+<form action="foo.php" method="get" onsubmit="submit_form(); return false;">
+<div class="form">
+<span class="formfield"><label for="lang1_id">Language you know:</label> <select id="lang1_id" name="lang1"></select></span>
+<span class="formfield"><label for="lang2_id">Language you want to learn:</label> <select id="lang2_id" name="lang2"></select></span>
+<input type="submit" value="Find something to read">
+</div>
+<div id="results">
+Select languages above and click the button. This app will then find all literary works which appear on <a href="https://wikisource.org/wiki/Main_Page">Wikisource</a> in both languages. Search implemented using <a href="https://www.wikidata.org/wiki/Wikidata:Main_Page">Wikidata</a>.
+</div>
+</form>
+</body>
+</html>
