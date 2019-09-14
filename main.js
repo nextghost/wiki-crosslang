@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 var slow_url = null;
+var storage_prefix = 'wiki-crosslang-';
 
 function add_init_callback(callback) {
 	if (document.readyState == 'complete') {
@@ -99,6 +100,7 @@ function process_langlist() {
 
 	let data = JSON.parse(this.responseText);
 	let lang_list = data.results.bindings;
+	let last_query = window.localStorage.getItem(storage_prefix + 'lastQuery');
 
 	for (idx in lang_list) {
 		let item = lang_list[idx];
@@ -117,9 +119,55 @@ function process_langlist() {
 		}
 	}
 
-	if (defurl) {
+	if (last_query) {
+		let select1 = document.getElementById('lang1_id');
+		let select2 = document.getElementById('lang2_id');
+		last_query = JSON.parse(last_query);
+		select1.value = last_query.header.srcLink;
+		select2.value = last_query.header.dstLink;
+	} else if (defurl) {
 		elem1.value = defurl;
 	}
+}
+
+function render_pagelist(header, pagelist) {
+	let rowlist = [create_element('tr', [
+		create_element('th', [header.srcName]),
+		create_element('th', [header.dstName])
+	])];
+
+	for (let i = 0; i < pagelist.length; i++) {
+		let item = pagelist[i];
+		rowlist.push(create_element('tr', [
+			create_element('td', [
+				create_element('a', [item.srcName],
+					{href:item.srcLink})
+			]),
+			create_element('td', [
+				create_element('a', [item.dstName],
+					{href:item.dstLink})
+			]),
+		]));
+	}
+
+	return create_element('table', rowlist);
+}
+
+function restore_pagelist() {
+	let data = window.localStorage.getItem(storage_prefix + 'lastQuery');
+
+	if (!data) {
+		return;
+	}
+
+	data = JSON.parse(data);
+	let date_opts = {dateStyle: 'short', timeStyle: 'short'};
+	let query_date = new Date(data.date).toLocaleString('en', date_opts);
+	let elem = document.getElementById('results');
+	elem.innerHTML = '';
+	elem.appendChild(create_element('div',
+		['Previous query found ' + data.pagelist.length + ' works on ' + query_date + '. Press the button above to get fresh results.']));
+	elem.appendChild(render_pagelist(data.header, data.pagelist));
 }
 
 function process_pagelist(xhr, header) {
@@ -139,29 +187,40 @@ function process_pagelist(xhr, header) {
 
 	let data = JSON.parse(xhr.responseText);
 	let result_list = data.results.bindings;
-	let rowlist = [create_element('tr', [
-		create_element('th', [header[0]]),
-		create_element('th', [header[1]])
-	])];
+	let field_list = ['srcLink', 'srcName', 'dstLink', 'dstName'];
+	let pagelist = [];
 
-	for (idx in result_list) {
+	row_loop: for (let idx in result_list) {
 		let item = result_list[idx];
-		rowlist.push(create_element('tr', [
-			create_element('td', [
-				create_element('a', [item.srcName.value],
-					{href:item.srcLink.value})
-			]),
-			create_element('td', [
-				create_element('a', [item.dstName.value],
-					{href:item.dstLink.value})
-			]),
-		]));
+		let tmp = {};
+
+		for (let j in field_list) {
+			let field = field_list[j];
+
+			if (!item[field] || !item[field].value) {
+				continue row_loop;
+			}
+
+			tmp[field] = item[field].value;
+		}
+
+		pagelist.push(tmp);
+	}
+
+	try {
+		let cache_data = JSON.stringify({version: 1,
+			date: new Date().getTime(), header: header,
+			pagelist: pagelist});
+		window.localStorage.setItem(storage_prefix + 'lastQuery',
+			cache_data);
+	} catch(err) {
+		console.error('Cannot save query results to local storage: %s', err);
 	}
 
 	elem.innerHTML = '';
 	elem.appendChild(create_element('div',
-		['Found ' + result_list.length + ' works.']));
-	elem.appendChild(create_element('table', rowlist));
+		['Found ' + pagelist.length + ' works.']));
+	elem.appendChild(render_pagelist(header, pagelist));
 }
 
 function send_query(sparql, callback) {
@@ -214,6 +273,8 @@ function submit_form() {
 
 	let langname1 = elem1.options[elem1.selectedIndex].innerText;
 	let langname2 = elem2.options[elem2.selectedIndex].innerText;
+	let header = {srcLink: baseurl1, srcName: langname1, dstLink: baseurl2,
+		dstName: langname2};
 
 	// Select WikiSource pages available in both languages.
 	// Ignore authors and WikiSource meta pages.
@@ -240,8 +301,13 @@ function submit_form() {
 
 	elem.innerHTML = 'Please wait. This may take a minute. Literally.';
 	send_query(query, function() {
-		process_pagelist(this, [langname1, langname2]);
+		process_pagelist(this, header);
 	});
 }
 
-add_init_callback(init_langlist);
+function init_page() {
+	init_langlist();
+	restore_pagelist();
+}
+
+add_init_callback(init_page);
