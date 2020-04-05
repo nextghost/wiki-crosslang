@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="description" content="Simple app for searching Wikisource by metadata"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Wikisource Metadata Search"/>
+<meta name="twitter:description" content="Simple app for looking up bilingual texts on Wikisource"/>
+<title>Wikisource Metadata Search</title>
+<script src="common.js"></script>
+<script src="metasearch.js"></script>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<h1>Wikisource Metadata Search</h1>
+<div><a href="index.html">Cross-lang search</a></div>
+<form action="#" method="get" onsubmit="submit_form(); return false;">
+<table class="form">
+<tr><td><label for="flang_id">Language:</label></td><td><select id="flang_id" name="lang"></select></td></tr>
+<tr><td><label for="ftitle_id">Title:</label></td><td><input type="text" name="title" id="ftitle_id"/></td></tr>
+<tr><td><label for="fauthor_id">Author:</label></td><td><input type="text" name="author" id="fauthor_id"/></td></tr>
+<tr><td><label for="fgenre_id">Genre:</label></td><td><input type="text" name="genre" id="fgenre_id"/></td></tr>
+<tr><td><label for="ftopic_id">Subject:</label></td><td><input type="text" name="subject" id="fsubject_id"/></td></tr>
+<tr><td>&nbsp;</td><td><input type="submit" value="Search"></td></tr>
+</table>
+<div id="results">
+Search <a href="https://wikisource.org/wiki/Main_Page">Wikisource</a> by book metadata. Search implemented using <a href="https://www.wikidata.org/wiki/Wikidata:Main_Page">Wikidata</a>.
+</div>
+</form>
+</body>
+</html>

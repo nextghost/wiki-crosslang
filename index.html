@@ -7,12 +7,14 @@
 <meta name="twitter:title" content="Wikisource Cross-lang Search"/>
 <meta name="twitter:description" content="Simple app for looking up bilingual texts on Wikisource"/>
 <title>Wikisource Cross-lang Search</title>
-<script src="main.js"></script>
+<script src="common.js"></script>
+<script src="crosslang.js"></script>
 <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 <h1>Wikisource Cross-lang Search</h1>
-<form action="foo.php" method="get" onsubmit="submit_form(); return false;">
+<div><a href="metasearch.html">Metadata Search</a></div>
+<form action="#" method="get" onsubmit="submit_form(); return false;">
 <div class="form">
 <span class="formfield"><label for="lang1_id">Language you know:</label> <select id="lang1_id" name="lang1"></select></span>
 <span class="formfield"><label for="lang2_id">Language you want to learn:</label> <select id="lang2_id" name="lang2"></select></span>

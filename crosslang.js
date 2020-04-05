@@ -19,66 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var slow_url = null;
 var storage_prefix = 'wiki-crosslang-';
 
-function add_init_callback(callback) {
-	if (document.readyState == 'complete') {
-		callback();
-		return;
-	}
-
-	document.addEventListener('readystatechange', function(e) {
-		if (document.readyState == 'complete') {
-			return callback();
-		}
-
-		return true;
-	});
-}
-
-function create_element(tag, content=[], attrs={}) {
-	let elem = document.createElement(tag);
-
-	for (let key in attrs) {
-		elem.setAttribute(key, attrs[key]);
-	}
-
-	for (let idx in content) {
-		let val = content[idx];
-
-		if ((typeof val) == 'string') {
-			val = document.createTextNode(val);
-		}
-
-		elem.appendChild(val);
-	}
-
-	return elem;
-}
-
-function get_preferred_lang() {
-	if (navigator.language) {
-		return navigator.language.substr(0, 2);
-	}
-
-	return 'en';
-}
-
-function titlecase(arg) {
-	let start = true;
-
-	for (let i = 0; i < arg.length; i++) {
-		if (arg[i] == ' ') {
-			start = true;
-		} else if (start) {
-			arg = arg.substring(0, i) +
-				arg[i].toLocaleUpperCase() +
-				arg.substring(i+1);
-			start = false;
-		}
-	}
-
-	return arg;
-}
-
 function process_langlist() {
 	if (this.readyState !== XMLHttpRequest.DONE) {
 		return;
@@ -223,38 +163,6 @@ function process_pagelist(xhr, header) {
 	elem.appendChild(render_pagelist(header, pagelist));
 }
 
-function send_query(sparql, callback) {
-	let xhr = new XMLHttpRequest();
-	let url = 'https://query.wikidata.org/sparql?query=';
-	url += encodeURIComponent(sparql) + '&format=json';
-	xhr.open('GET', url, true);
-	xhr.onreadystatechange = callback;
-	xhr.timeout = 120000;
-	xhr.send();
-	return xhr;
-}
-
-function init_langlist() {
-	let lang = get_preferred_lang();
-	let query = 'SELECT ?url ?langcode ?langname WHERE {\
-		?item wdt:P31 wd:Q15156455;\
-		      wdt:P856 ?url;\
-		      wdt:P424 ?langcode;\
-		FILTER(?langcode != "mul").\
-		OPTIONAL {\
-		  ?item wdt:P407/rdfs:label ?preflangname.\
-		  FILTER(LANG(?preflangname) = "' + lang + '").\
-		}\
-		OPTIONAL {\
-		  ?item wdt:P407/rdfs:label ?enlangname.\
-		  FILTER(LANG(?enlangname) = "en").\
-		}\
-		BIND(LCASE(COALESCE(?preflangname, ?enlangname)) AS ?langname)\
-		}\
-		ORDER BY STR(?langname)';
-	send_query(query, process_langlist);
-}
-
 function submit_form() {
 	let elem1 = document.getElementById('lang1_id');
 	let elem2 = document.getElementById('lang2_id');
@@ -306,7 +214,7 @@ function submit_form() {
 }
 
 function init_page() {
-	init_langlist();
+	query_ws_langlist(process_langlist);
 	restore_pagelist();
 }
 
