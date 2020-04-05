@@ -172,7 +172,7 @@ function submit_form() {
 			schema:name ?name;\
 			schema:about ?work.\
 		?work wdt:P31 ?class;" + conds.join(';') + "." +
-		filters.join('\n') + "}";
+		filters.join('\n') + "} ORDER BY ASC(?name)";
 
 	elem.innerHTML = 'Please wait. This may take a minute. Literally.';
 	send_query(query, function() {
