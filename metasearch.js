@@ -171,7 +171,7 @@ function submit_form() {
 		"?link schema:isPartOf <" + baseurl + ">;\
 			schema:name ?name;\
 			schema:about ?work.\
-		?work wdt:P31 ?class;" + conds.join(';') + "." +
+		?work wdt:P629*/wdt:P31 ?class;" + conds.join(';') + "." +
 		filters.join('\n') + "} ORDER BY ASC(?name)";
 
 	elem.innerHTML = 'Please wait. This may take a minute. Literally.';
