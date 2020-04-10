@@ -134,7 +134,7 @@ function submit_form() {
 	if (fgenre) {
 		subqs.push('{SELECT ?genre WHERE {\
 			?genre wdt:P31 wd:Q223393;\
-				rdfs:label?gname.\
+				rdfs:label ?gname.\
 			FILTER(CONTAINS(LCASE(STR(?gname)), LCASE("' +
 			sparql_escape(fgenre) + '")))}}');
 		conds.push('wdt:P136 ?genre');
