@@ -201,12 +201,8 @@ function submit_form() {
 		query += qurl1 + qurl2;
 	}
 
-	query += "MINUS {?item wdt:P31 wd:Q5.}\
-		MINUS {?item wdt:P31/wdt:P279* wd:Q21070568.}\
-		MINUS {?item wdt:P31/wdt:P279* wd:Q16334295.}\
-		MINUS {?item wdt:P31/wdt:P279* wd:Q17442446.}\
-	}";
-
+	// Select only items which have a title. Not people or categories.
+	query += "FILTER EXISTS {?item wdt:P1476 ?any}}";
 	elem.innerHTML = 'Please wait. This may take a minute. Literally.';
 	send_query(query, function() {
 		process_pagelist(this, header);
