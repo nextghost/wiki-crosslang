@@ -16,8 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-var slow_url = null;
 var storage_prefix = 'wiki-crosslang-';
+var crosslang_version = 2;
+
+function load_last_query() {
+	let data = window.localStorage.getItem(storage_prefix + 'lastQuery');
+
+	if (!data) {
+		return undefined;
+	}
+
+	data = JSON.parse(data);
+	return (data.version == crosslang_version) ? data : undefined;
+}
 
 function process_langlist() {
 	if (this.readyState !== XMLHttpRequest.DONE) {
@@ -40,7 +51,7 @@ function process_langlist() {
 
 	let data = JSON.parse(this.responseText);
 	let lang_list = data.results.bindings;
-	let last_query = window.localStorage.getItem(storage_prefix + 'lastQuery');
+	let last_query = load_last_query();
 
 	lang_list.sort(ws_langlist_cmp);
 
@@ -55,21 +66,28 @@ function process_langlist() {
 		if (item.langcode.value === lang) {
 			defurl = item.url.value;
 		}
-
-		if (item.langcode.value === 'en') {
-			slow_url = item.url.value;
-		}
 	}
 
 	if (last_query) {
-		let select1 = document.getElementById('lang1_id');
-		let select2 = document.getElementById('lang2_id');
-		last_query = JSON.parse(last_query);
-		select1.value = last_query.header.srcLink;
-		select2.value = last_query.header.dstLink;
+		elem1.value = last_query.header.srcLink;
+		elem2.value = last_query.header.dstLink;
 	} else if (defurl) {
 		elem1.value = defurl;
 	}
+}
+
+function render_cell_links(linklist) {
+	let ret = [];
+
+	for (let i = 0; i < linklist.length; i++) {
+		let item = linklist[i];
+
+		ret.push(create_element('div', [
+			create_element('a', [item.name], {href: item.link})
+		]));
+	}
+
+	return ret;
 }
 
 function render_pagelist(header, pagelist) {
@@ -81,14 +99,8 @@ function render_pagelist(header, pagelist) {
 	for (let i = 0; i < pagelist.length; i++) {
 		let item = pagelist[i];
 		rowlist.push(create_element('tr', [
-			create_element('td', [
-				create_element('a', [item.srcName],
-					{href:item.srcLink})
-			]),
-			create_element('td', [
-				create_element('a', [item.dstName],
-					{href:item.dstLink})
-			]),
+			create_element('td', render_cell_links(item.src)),
+			create_element('td', render_cell_links(item.dst)),
 		]));
 	}
 
@@ -96,13 +108,12 @@ function render_pagelist(header, pagelist) {
 }
 
 function restore_pagelist() {
-	let data = window.localStorage.getItem(storage_prefix + 'lastQuery');
+	let data = load_last_query();
 
 	if (!data) {
 		return;
 	}
 
-	data = JSON.parse(data);
 	let date_opts = {dateStyle: 'short', timeStyle: 'short'};
 	let query_date = new Date(data.date).toLocaleString('en', date_opts);
 	let elem = document.getElementById('results');
@@ -129,8 +140,8 @@ function process_pagelist(xhr, header) {
 
 	let data = JSON.parse(xhr.responseText);
 	let result_list = data.results.bindings;
-	let field_list = ['srcLink', 'srcName', 'dstLink', 'dstName'];
-	let pagelist = [];
+	let field_list = ['work', 'link', 'name'];
+	let linkmap = {};
 
 	row_loop: for (let idx in result_list) {
 		let item = result_list[idx];
@@ -146,11 +157,29 @@ function process_pagelist(xhr, header) {
 			tmp[field] = item[field].value;
 		}
 
-		pagelist.push(tmp);
+		if (!linkmap[tmp.work]) {
+			linkmap[tmp.work] = {src: [], dst: []};
+		}
+
+		if (tmp.link.startsWith(header.srcLink)) {
+			linkmap[tmp.work].src.push(tmp);
+		} else if (tmp.link.startsWith(header.dstLink)) {
+			linkmap[tmp.work].dst.push(tmp);
+		}
+	}
+
+	data = null;
+	result_list = null;
+	let pagelist = [];
+
+	for (let idx in linkmap) {
+		if (linkmap[idx].src.length && linkmap[idx].dst.length) {
+			pagelist.push(linkmap[idx]);
+		}
 	}
 
 	try {
-		let cache_data = JSON.stringify({version: 1,
+		let cache_data = JSON.stringify({version: crosslang_version,
 			date: new Date().getTime(), header: header,
 			pagelist: pagelist});
 		window.localStorage.setItem(storage_prefix + 'lastQuery',
@@ -163,6 +192,13 @@ function process_pagelist(xhr, header) {
 	elem.appendChild(create_element('div',
 		['Found ' + pagelist.length + ' works.']));
 	elem.appendChild(render_pagelist(header, pagelist));
+}
+
+function format_subquery(baseurl) {
+	return "?link schema:isPartOf <" + baseurl + ">;\
+		schema:name ?name;\
+		schema:about/wdt:P629? ?work.\
+		FILTER EXISTS {?work wdt:P1476 ?any}";
 }
 
 function submit_form() {
@@ -188,23 +224,10 @@ function submit_form() {
 
 	// Select WikiSource pages available in both languages.
 	// Ignore authors and WikiSource meta pages.
-	let query = "SELECT ?srcLink ?srcName ?dstLink ?dstName WHERE {";
-	let qurl1 = "?srcLink schema:isPartOf <" + baseurl1 + ">;\
-		schema:name ?srcName;\
-		schema:about ?item.";
-	let qurl2 = "?dstLink schema:isPartOf <" + baseurl2 + ">;\
-		schema:name ?dstName;\
-		schema:about ?item.";
+	let query = "SELECT ?work ?link ?name WHERE {{" +
+		format_subquery(baseurl1) + "} UNION {" +
+		format_subquery(baseurl2) + "}}";
 
-	// Performance optimization of the Wikidata SPARQL query
-	if (baseurl1 === slow_url) {
-		query += qurl2 + qurl1;
-	} else {
-		query += qurl1 + qurl2;
-	}
-
-	// Select only items which have a title. Not people or categories.
-	query += "FILTER EXISTS {?item wdt:P1476 ?any}}";
 	elem.innerHTML = 'Please wait. This may take a minute. Literally.';
 	send_query(query, function() {
 		process_pagelist(this, header);
