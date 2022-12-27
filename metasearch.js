@@ -37,6 +37,8 @@ function process_langlist() {
 	let data = JSON.parse(this.responseText);
 	let lang_list = data.results.bindings;
 
+	lang_list.sort(ws_langlist_cmp);
+
 	for (idx in lang_list) {
 		let item = lang_list[idx];
 		let langname = titlecase(item.langname.value);

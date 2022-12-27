@@ -59,6 +59,8 @@ function get_preferred_lang() {
 	return 'en';
 }
 
+locale_cmp = new Intl.Collator(get_preferred_lang()).compare;
+
 function titlecase(arg) {
 	let start = true;
 
@@ -103,9 +105,12 @@ function query_ws_langlist(callback) {
 		  FILTER(LANG(?enlangname) = "en").\
 		}\
 		BIND(LCASE(COALESCE(?preflangname, ?enlangname)) AS ?langname)\
-		}\
-		ORDER BY STR(?langname)';
+		}';
 	send_query(query, callback);
+}
+
+function ws_langlist_cmp(a, b) {
+	return locale_cmp(a.langname.value, b.langname.value);
 }
 
 function sparql_escape(str) {
