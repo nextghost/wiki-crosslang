@@ -123,6 +123,18 @@ function restore_pagelist() {
 	elem.appendChild(render_pagelist(data.header, data.pagelist));
 }
 
+function create_link_collator(lang) {
+	if (!lang) {
+		return null;
+	}
+
+	let cmp = new Intl.Collator(lang).compare;
+
+	return function(a, b) {
+		return cmp(a.name, b.name);
+	};
+}
+
 function process_pagelist(xhr, header) {
 	if (xhr.readyState !== XMLHttpRequest.DONE) {
 		return;
@@ -140,6 +152,8 @@ function process_pagelist(xhr, header) {
 
 	let data = JSON.parse(xhr.responseText);
 	let result_list = data.results.bindings;
+	let srclang = null;
+	let dstlang = null;
 	let field_list = ['work', 'link', 'name'];
 	let linkmap = {};
 
@@ -163,19 +177,45 @@ function process_pagelist(xhr, header) {
 
 		if (tmp.link.startsWith(header.srcLink)) {
 			linkmap[tmp.work].src.push(tmp);
+
+			if (!srclang && item.name['xml:lang']) {
+				srclang = item.name['xml:lang'];
+			}
 		} else if (tmp.link.startsWith(header.dstLink)) {
 			linkmap[tmp.work].dst.push(tmp);
+
+			if (!dstlang && item.name['xml:lang']) {
+				dstlang = item.name['xml:lang'];
+			}
 		}
 	}
 
 	data = null;
 	result_list = null;
+	dstlang = 'fnord';
+
+	let srccmp = create_link_collator(srclang);
+	let dstcmp = create_link_collator(dstlang);
 	let pagelist = [];
 
 	for (let idx in linkmap) {
 		if (linkmap[idx].src.length && linkmap[idx].dst.length) {
+			if (srccmp) {
+				linkmap[idx].src.sort(srccmp);
+			}
+
+			if (dstcmp) {
+				linkmap[idx].dst.sort(dstcmp);
+			}
+
 			pagelist.push(linkmap[idx]);
 		}
+	}
+
+	if (srccmp) {
+		pagelist.sort(function(a, b) {
+			return srccmp(a.src[0], b.src[0]);
+		});
 	}
 
 	try {
